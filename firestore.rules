@@ -1,0 +1,52 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: participants
+// Document ID: auto-generated
+// Fields:
+//   - fullName: string (required) - Nome completo
+//   - phone: string (required) - Telefone
+//   - city: string (required) - Cidade
+//   - activityBranch: string (required) - Ramo
+//   - rawMaterial: string (required) - Matéria-prima
+//   - followedInstagram: bool (required) - Verificação Instagram
+//   - createdAt: number (required) - Timestamp
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidUser(data) {
+      return data.fullName is string && data.fullName.size() > 0 && data.fullName.size() < 200 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 30 &&
+             data.city is string && data.city.size() > 0 && data.city.size() < 100 &&
+             data.activityBranch is string && data.activityBranch.size() > 0 && data.activityBranch.size() < 100 &&
+             data.rawMaterial is string && data.rawMaterial.size() > 0 && data.rawMaterial.size() < 100 &&
+             data.followedInstagram is bool &&
+             data.createdAt is number;
+    }
+
+    match /participants/{participantId} {
+      // Qualquer pessoa pode se cadastrar (criar)
+      allow create: if isValidUser(request.resource.data);
+      
+      // Apenas leitura e deleção para o admin (protegido por senha no app, mas aqui permitimos leitura autenticada ou geral para o demo)
+      // Em um cenário real, usaríamos auth claims, mas para este app simples permitiremos leitura para o sorteio
+      allow read: if true; 
+      
+      // Apenas deleção (limpeza de dados)
+      allow delete: if true; 
+      
+      // Updates não são necessários para este fluxo
+      allow update: if false;
+    }
+  }
+}

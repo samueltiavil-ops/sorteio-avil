@@ -1,0 +1,21 @@
+{
+  "name": "Avil Têxtil Sorteio",
+  "short_name": "Avil Sorteio",
+  "description": "Participe do sorteio da Avil Têxtil!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5A5A40",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/avil/192/192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://picsum.photos/seed/avil/512/512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

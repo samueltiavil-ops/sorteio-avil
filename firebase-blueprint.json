@@ -1,0 +1,25 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Participante do sorteio da Avil Têxtil",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "description": "Nome completo do participante" },
+        "phone": { "type": "string", "description": "Telefone de contato" },
+        "city": { "type": "string", "description": "Cidade do participante" },
+        "activityBranch": { "type": "string", "description": "Ramo de atividade" },
+        "rawMaterial": { "type": "string", "description": "Matéria-prima utilizada" },
+        "followedInstagram": { "type": "boolean", "description": "Se seguiu o Instagram" },
+        "createdAt": { "type": "number", "description": "Timestamp de criação" }
+      },
+      "required": ["fullName", "phone", "city", "activityBranch", "rawMaterial", "followedInstagram", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/participants/{participantId}": {
+      "schema": "User",
+      "description": "Coleção de participantes do sorteio"
+    }
+  }
+}

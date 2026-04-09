@@ -1,0 +1,5 @@
+{
+  "name": "Avil Têxtil - Sorteio PWA",
+  "description": "Aplicativo de sorteio para clientes da Avil Têxtil com funcionamento offline e armazenamento local.",
+  "requestFramePermissions": []
+}
