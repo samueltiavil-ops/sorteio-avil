@@ -63,6 +63,8 @@ export default function App() {
     city: '',
     activityBranch: '',
     rawMaterial: '',
+    isClothingBrand: false,
+    brandInstagram: '',
     followedInstagram: false
   });
   const [otherActivity, setOtherActivity] = useState('');
@@ -85,6 +87,11 @@ export default function App() {
 
     if (!formData.fullName || !formData.phone || !formData.city || !finalActivityBranch || !formData.rawMaterial) {
       setError('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    if (formData.isClothingBrand && !formData.brandInstagram) {
+      setError('Por favor, informe o Instagram da sua confecção.');
       return;
     }
 
@@ -115,6 +122,8 @@ export default function App() {
         city: '',
         activityBranch: '',
         rawMaterial: '',
+        isClothingBrand: false,
+        brandInstagram: '',
         followedInstagram: false
       });
       setOtherActivity('');
@@ -184,10 +193,14 @@ export default function App() {
   };
 
   const exportToPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
     
     // Header
-    doc.setFontSize(18);
+    doc.setFontSize(20);
     doc.text('Avil Têxtil - Lista de Participantes', 14, 22);
     doc.setFontSize(11);
     doc.setTextColor(100);
@@ -197,6 +210,8 @@ export default function App() {
       user.fullName,
       user.phone,
       user.city,
+      user.isClothingBrand ? 'Sim' : 'Não',
+      user.brandInstagram || '-',
       user.activityBranch,
       user.rawMaterial,
       new Date(user.createdAt).toLocaleDateString()
@@ -204,13 +219,32 @@ export default function App() {
 
     autoTable(doc, {
       startY: 35,
-      head: [['Nome', 'Telefone', 'Cidade', 'Ramo', 'Matéria-prima', 'Data']],
+      head: [['Nome', 'Telefone', 'Cidade', 'Confecção', 'Insta Confecção', 'Ramo', 'Matéria-prima', 'Data']],
       body: tableData,
       theme: 'striped',
-      headStyles: { fillColor: [0, 0, 0] },
+      headStyles: { 
+        fillColor: [0, 0, 0],
+        fontSize: 10,
+        halign: 'center'
+      },
+      styles: { 
+        fontSize: 9,
+        cellPadding: 3,
+        valign: 'middle'
+      },
+      columnStyles: {
+        0: { cellWidth: 'auto' }, // Nome
+        1: { cellWidth: 35 },     // Telefone
+        2: { cellWidth: 30 },     // Cidade
+        3: { cellWidth: 20 },     // Confecção
+        4: { cellWidth: 35 },     // Insta Confecção
+        5: { cellWidth: 35 },     // Ramo
+        6: { cellWidth: 35 },     // Matéria-prima
+        7: { cellWidth: 25 },     // Data
+      }
     });
 
-    doc.save('participantes-avil-textil.pdf');
+    doc.save(`Participantes_Avil_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const exportToXLSX = () => {
@@ -218,6 +252,8 @@ export default function App() {
       'Nome Completo': user.fullName,
       'Telefone': user.phone,
       'Cidade': user.city,
+      'Possui Confecção': user.isClothingBrand ? 'Sim' : 'Não',
+      'Instagram da Confecção': user.brandInstagram || '-',
       'Ramo de Atividade': user.activityBranch,
       'Matéria-prima': user.rawMaterial,
       'Data de Cadastro': new Date(user.createdAt).toLocaleString()
@@ -357,6 +393,59 @@ export default function App() {
                         placeholder="Sua cidade"
                       />
                     </div>
+                  </div>
+
+                  <div className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 space-y-4">
+                    <label className="text-xs font-black uppercase tracking-widest text-black block">Você possui confecção?</label>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, isClothingBrand: true})}
+                        className={`flex-1 py-3 rounded-xl font-bold transition-all border-2 ${
+                          formData.isClothingBrand 
+                          ? 'bg-black text-white border-black' 
+                          : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        Sim
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, isClothingBrand: false, brandInstagram: ''})}
+                        className={`flex-1 py-3 rounded-xl font-bold transition-all border-2 ${
+                          !formData.isClothingBrand 
+                          ? 'bg-black text-white border-black' 
+                          : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        Não
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {formData.isClothingBrand && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2 block">Instagram da Confecção</label>
+                            <div className="relative">
+                              <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                              <input 
+                                type="text"
+                                value={formData.brandInstagram}
+                                onChange={e => setFormData({...formData, brandInstagram: e.target.value})}
+                                className="w-full bg-white border-2 border-gray-100 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-black font-semibold"
+                                placeholder="@suaconfeccao"
+                              />
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div className="relative">

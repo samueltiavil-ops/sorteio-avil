@@ -12,6 +12,8 @@ export interface User {
   city: string;
   activityBranch: string;
   rawMaterial: string;
+  isClothingBrand: boolean;
+  brandInstagram?: string;
   followedInstagram: boolean;
   createdAt: number;
 }
