@@ -17,11 +17,13 @@ import {
   FileDown,
   QrCode,
   X,
-  Phone
+  Phone,
+  FileSpreadsheet
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { QRCodeSVG } from 'qrcode.react';
 import { addUser, getUsers, clearUsers, deleteUser, subscribeToUsers, User } from './firebase';
 
@@ -209,6 +211,22 @@ export default function App() {
     });
 
     doc.save('participantes-avil-textil.pdf');
+  };
+
+  const exportToXLSX = () => {
+    const worksheet = XLSX.utils.json_to_sheet(users.map(user => ({
+      'Nome Completo': user.fullName,
+      'Telefone': user.phone,
+      'Cidade': user.city,
+      'Ramo de Atividade': user.activityBranch,
+      'Matéria-prima': user.rawMaterial,
+      'Data de Cadastro': new Date(user.createdAt).toLocaleString()
+    })));
+    
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Participantes");
+    
+    XLSX.writeFile(workbook, `Participantes_Avil_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   return (
@@ -515,6 +533,14 @@ export default function App() {
                     title="Exportar para PDF"
                   >
                     <FileDown size={20} />
+                  </button>
+                  <button 
+                    onClick={exportToXLSX}
+                    disabled={users.length === 0}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-30"
+                    title="Exportar para Excel (XLSX)"
+                  >
+                    <FileSpreadsheet size={20} />
                   </button>
                   <button 
                     onClick={handleClearData}
