@@ -27,6 +27,24 @@ import { addUser, getUsers, clearUsers, deleteUser, subscribeToUsers, User } fro
 
 type View = 'registration' | 'admin' | 'success';
 
+const ACTIVITY_BRANCHES = [
+  "FARDAMENTOS",
+  "ARMARINHO",
+  "CAMA/MESA",
+  "MODA",
+  "MODA INFANTIL",
+  "MODA MASCULINA",
+  "DECORAÇÃO",
+  "CAMISARIA",
+  "REVENDA",
+  "ESTAMPARIA",
+  "HOSPITAL/HOTEL/LAVANDERIA",
+  "COSTURA",
+  "ASSOCIAÇÃO/ONGS",
+  "ARTESANATO",
+  "OUTROS"
+];
+
 export default function App() {
   const [view, setView] = useState<View>('registration');
   const [users, setUsers] = useState<User[]>([]);
@@ -45,6 +63,7 @@ export default function App() {
     rawMaterial: '',
     followedInstagram: false
   });
+  const [otherActivity, setOtherActivity] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -60,7 +79,9 @@ export default function App() {
     e.preventDefault();
     setError('');
 
-    if (!formData.fullName || !formData.phone || !formData.city || !formData.activityBranch || !formData.rawMaterial) {
+    const finalActivityBranch = formData.activityBranch === 'OUTROS' ? otherActivity : formData.activityBranch;
+
+    if (!formData.fullName || !formData.phone || !formData.city || !finalActivityBranch || !formData.rawMaterial) {
       setError('Por favor, preencha todos os campos.');
       return;
     }
@@ -82,7 +103,10 @@ export default function App() {
     }
 
     try {
-      await addUser(formData);
+      await addUser({
+        ...formData,
+        activityBranch: finalActivityBranch
+      });
       setFormData({
         fullName: '',
         phone: '',
@@ -91,6 +115,7 @@ export default function App() {
         rawMaterial: '',
         followedInstagram: false
       });
+      setOtherActivity('');
       setView('success');
     } catch (err) {
       setError('Erro ao salvar cadastro. Tente novamente.');
@@ -320,15 +345,41 @@ export default function App() {
                     <label className="text-xs font-black uppercase tracking-widest text-black mb-2 block">Ramo de Atividade</label>
                     <div className="relative">
                       <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                      <input 
-                        type="text"
+                      <select 
                         value={formData.activityBranch}
                         onChange={e => setFormData({...formData, activityBranch: e.target.value})}
-                        className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-black font-semibold"
-                        placeholder="Ex: Confecção, Artesanato..."
-                      />
+                        className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-black font-semibold appearance-none"
+                      >
+                        <option value="">Selecione seu ramo...</option>
+                        {ACTIVITY_BRANCHES.map(branch => (
+                          <option key={branch} value={branch}>{branch}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                        <ArrowRight size={18} className="rotate-90" />
+                      </div>
                     </div>
                   </div>
+
+                  {formData.activityBranch === 'OUTROS' && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="relative"
+                    >
+                      <label className="text-xs font-black uppercase tracking-widest text-black mb-2 block">Especifique o Ramo</label>
+                      <div className="relative">
+                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input 
+                          type="text"
+                          value={otherActivity}
+                          onChange={e => setOtherActivity(e.target.value)}
+                          className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-black font-semibold"
+                          placeholder="Digite seu ramo de atividade"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
 
                   <div className="relative">
                     <label className="text-xs font-black uppercase tracking-widest text-black mb-2 block">Matéria-prima Utilizada</label>
@@ -421,12 +472,18 @@ export default function App() {
                 <h2 className="text-4xl font-black text-black">Tudo pronto!</h2>
                 <p className="text-gray-600 font-medium text-lg">Seu cadastro foi realizado. Agora é só torcer!</p>
               </div>
-              <button 
-                onClick={() => setView('registration')}
-                className="inline-flex items-center gap-2 text-black font-black hover:underline text-lg"
-              >
-                Fazer outro cadastro
-              </button>
+              <div className="flex flex-col items-center gap-2">
+                <a 
+                  href="https://www.lojaavil.com.br"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-black font-black hover:underline text-lg flex flex-col items-center leading-tight"
+                >
+                  <span>Click aqui</span>
+                  <span>e visite nosso e-commerce</span>
+                </a>
+                <p className="text-[#4169E1] font-bold text-sm">www.lojaavil.com.br</p>
+              </div>
             </motion.div>
           )}
 
