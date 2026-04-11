@@ -56,7 +56,7 @@ export default function App() {
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   
-  const PUBLIC_URL = 'https://ais-pre-otm45lpkuwl4gev7m6e54q-422422271927.us-west2.run.app';
+  const PUBLIC_URL = 'https://sorteio-avil.vercel.app/';
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
