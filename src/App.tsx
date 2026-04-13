@@ -55,6 +55,7 @@ export default function App() {
   const [adminPassword, setAdminPassword] = useState('');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [countdown, setCountdown] = useState(7);
   
   const PUBLIC_URL = 'https://sorteio-avil.vercel.app/';
   const [formData, setFormData] = useState({
@@ -78,6 +79,16 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (view === 'success' && countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (view === 'success' && countdown === 0) {
+      window.location.href = 'https://www.instagram.com/avilatacado/';
+    }
+    return () => clearTimeout(timer);
+  }, [view, countdown]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +139,7 @@ export default function App() {
       });
       setOtherActivity('');
       setView('success');
+      setCountdown(7);
     } catch (err) {
       setError('Erro ao salvar cadastro. Tente novamente.');
     }
@@ -194,17 +206,17 @@ export default function App() {
 
   const exportToPDF = () => {
     const doc = new jsPDF({
-      orientation: 'landscape',
+      orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     });
     
     // Header
-    doc.setFontSize(20);
+    doc.setFontSize(18);
     doc.text('Avil Têxtil - Lista de Participantes', 14, 22);
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 28);
 
     const tableData = users.map(user => [
       user.fullName,
@@ -213,34 +225,32 @@ export default function App() {
       user.isClothingBrand ? 'Sim' : 'Não',
       user.brandInstagram || '-',
       user.activityBranch,
-      user.rawMaterial,
-      new Date(user.createdAt).toLocaleDateString()
+      user.rawMaterial
     ]);
 
     autoTable(doc, {
       startY: 35,
-      head: [['Nome', 'Telefone', 'Cidade', 'Confecção', 'Insta Confecção', 'Ramo', 'Matéria-prima', 'Data']],
+      head: [['Nome', 'Telefone', 'Cidade', 'Conf.', 'Instagram Conf.', 'Ramo', 'Matéria-prima']],
       body: tableData,
       theme: 'striped',
       headStyles: { 
         fillColor: [0, 0, 0],
-        fontSize: 10,
+        fontSize: 8,
         halign: 'center'
       },
       styles: { 
-        fontSize: 9,
-        cellPadding: 3,
+        fontSize: 7,
+        cellPadding: 2,
         valign: 'middle'
       },
       columnStyles: {
-        0: { cellWidth: 'auto' }, // Nome
-        1: { cellWidth: 35 },     // Telefone
-        2: { cellWidth: 30 },     // Cidade
-        3: { cellWidth: 20 },     // Confecção
-        4: { cellWidth: 35 },     // Insta Confecção
-        5: { cellWidth: 35 },     // Ramo
-        6: { cellWidth: 35 },     // Matéria-prima
-        7: { cellWidth: 25 },     // Data
+        0: { cellWidth: 35 }, // Nome
+        1: { cellWidth: 25 }, // Telefone
+        2: { cellWidth: 25 }, // Cidade
+        3: { cellWidth: 12 }, // Confecção
+        4: { cellWidth: 30 }, // Insta Confecção
+        5: { cellWidth: 30 }, // Ramo
+        6: { cellWidth: 30 }, // Matéria-prima
       }
     });
 
@@ -570,25 +580,50 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white/95 backdrop-blur-sm rounded-[2.5rem] p-12 shadow-2xl text-center space-y-8 border border-white/20"
+              className="bg-white/95 backdrop-blur-sm rounded-[2.5rem] p-10 shadow-2xl text-center space-y-6 border border-white/20 max-w-md mx-auto"
             >
-              <div className="w-28 h-28 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
-                <CheckCircle2 size={64} />
+              <div className="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle2 size={48} />
               </div>
-              <div className="space-y-3">
-                <h2 className="text-4xl font-black text-black">Tudo pronto!</h2>
-                <p className="text-gray-600 font-medium text-lg">Seu cadastro foi realizado. Agora é só torcer!</p>
+              
+              <div className="space-y-4">
+                <h2 className="text-3xl font-black text-black leading-tight">
+                  Você está concorrendo à uma Máquina de Costura Reta.
+                </h2>
+                
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-white border border-gray-100 flex items-center justify-center p-2">
+                  <img 
+                    src="https://i.postimg.cc/prFXw0tK/eeeeerrrrrr.jpg" 
+                    alt="Máquina de Costura Reta Makspecial"
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-gray-600 font-bold text-sm">
+                    Redirecionando para o Instagram em {countdown}s...
+                  </p>
+                  <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: "100%" }}
+                      animate={{ width: "0%" }}
+                      transition={{ duration: 7, ease: "linear" }}
+                      className="bg-black h-full"
+                    />
+                  </div>
+                  {countdown === 0 && (
+                    <button 
+                      onClick={() => window.location.href = 'https://www.instagram.com/avilatacado/'}
+                      className="mt-2 text-xs font-black text-black underline"
+                    >
+                      Clique aqui se não for redirecionado
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <a 
-                  href="https://www.lojaavil.com.br"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-black font-black hover:underline text-lg flex flex-col items-center leading-tight"
-                >
-                  <span>Click aqui</span>
-                  <span>e visite nosso e-commerce</span>
-                </a>
+
+              <div className="pt-4 border-t border-gray-100">
                 <p className="text-[#4169E1] font-bold text-sm">www.lojaavil.com.br</p>
               </div>
             </motion.div>
