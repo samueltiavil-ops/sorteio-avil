@@ -18,7 +18,8 @@ import {
   QrCode,
   X,
   Phone,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Fingerprint
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
@@ -56,10 +57,14 @@ export default function App() {
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [countdown, setCountdown] = useState(7);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
   
   const PUBLIC_URL = 'https://sorteio-avil.vercel.app/';
   const [formData, setFormData] = useState({
     fullName: '',
+    cpf: '',
     phone: '',
     city: '',
     activityBranch: '',
@@ -129,6 +134,7 @@ export default function App() {
       });
       setFormData({
         fullName: '',
+        cpf: '',
         phone: '',
         city: '',
         activityBranch: '',
@@ -168,10 +174,9 @@ export default function App() {
   };
 
   const handleClearData = async () => {
-    if (window.confirm('Tem certeza que deseja apagar todos os cadastros?')) {
-      await clearUsers();
-      setWinner(null);
-    }
+    await clearUsers();
+    setWinner(null);
+    setShowClearConfirm(false);
   };
 
   const handleAdminAccess = () => {
@@ -179,6 +184,7 @@ export default function App() {
       setView('registration');
       setAdminPassword('');
       setShowPasswordPrompt(false);
+      setPasswordError(false);
     } else {
       setShowPasswordPrompt(true);
     }
@@ -186,22 +192,23 @@ export default function App() {
 
   const verifyPassword = (e: React.FormEvent) => {
     e.preventDefault();
+    setPasswordError(false);
     // Senha padrão definida para o administrador
     if (adminPassword === 'avil2026') {
       setView('admin');
       setShowPasswordPrompt(false);
       setAdminPassword('');
     } else {
-      alert('Senha incorreta!');
+      setPasswordError(true);
+      setAdminPassword('');
     }
   };
 
-  const handleDeleteUser = async (id: string | undefined) => {
-    if (id === undefined) return;
-    if (window.confirm('Deseja excluir este participante?')) {
-      await deleteUser(id);
-      if (winner?.id === id) setWinner(null);
-    }
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    await deleteUser(userToDelete);
+    if (winner?.id === userToDelete) setWinner(null);
+    setUserToDelete(null);
   };
 
   const exportToPDF = () => {
@@ -220,6 +227,7 @@ export default function App() {
 
     const tableData = users.map(user => [
       user.fullName,
+      user.cpf || '-',
       user.phone,
       user.city,
       user.isClothingBrand ? 'Sim' : 'Não',
@@ -230,27 +238,28 @@ export default function App() {
 
     autoTable(doc, {
       startY: 35,
-      head: [['Nome', 'Telefone', 'Cidade', 'Conf.', 'Instagram Conf.', 'Ramo', 'Matéria-prima']],
+      head: [['Nome', 'CPF', 'Telefone', 'Cidade', 'Conf.', 'Instagram Conf.', 'Ramo', 'Matéria-prima']],
       body: tableData,
       theme: 'striped',
       headStyles: { 
         fillColor: [0, 0, 0],
-        fontSize: 8,
+        fontSize: 7,
         halign: 'center'
       },
       styles: { 
-        fontSize: 7,
-        cellPadding: 2,
+        fontSize: 6,
+        cellPadding: 1.5,
         valign: 'middle'
       },
       columnStyles: {
-        0: { cellWidth: 35 }, // Nome
-        1: { cellWidth: 25 }, // Telefone
-        2: { cellWidth: 25 }, // Cidade
-        3: { cellWidth: 12 }, // Confecção
-        4: { cellWidth: 30 }, // Insta Confecção
-        5: { cellWidth: 30 }, // Ramo
-        6: { cellWidth: 30 }, // Matéria-prima
+        0: { cellWidth: 30 }, // Nome
+        1: { cellWidth: 25 }, // CPF
+        2: { cellWidth: 22 }, // Telefone
+        3: { cellWidth: 22 }, // Cidade
+        4: { cellWidth: 10 }, // Confecção
+        5: { cellWidth: 25 }, // Insta Confecção
+        6: { cellWidth: 25 }, // Ramo
+        7: { cellWidth: 25 }, // Matéria-prima
       }
     });
 
@@ -260,6 +269,7 @@ export default function App() {
   const exportToXLSX = () => {
     const worksheet = XLSX.utils.json_to_sheet(users.map(user => ({
       'Nome Completo': user.fullName,
+      'CPF': user.cpf || '-',
       'Telefone': user.phone,
       'Cidade': user.city,
       'Possui Confecção': user.isClothingBrand ? 'Sim' : 'Não',
@@ -303,51 +313,6 @@ export default function App() {
 
       <main className="max-w-md mx-auto p-6 pb-24">
         <AnimatePresence mode="wait">
-          {showPasswordPrompt && (
-            <motion.div
-              key="password-prompt"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#f5f5f0]/80 backdrop-blur-sm"
-            >
-              <div className="bg-white border border-[#5A5A40]/20 rounded-3xl p-8 w-full max-w-xs shadow-2xl space-y-6">
-                <div className="text-center space-y-2">
-                  <div className="w-12 h-12 bg-[#5A5A40]/10 text-[#5A5A40] rounded-full flex items-center justify-center mx-auto">
-                    <Settings size={24} />
-                  </div>
-                  <h3 className="font-bold text-lg">Acesso Restrito</h3>
-                  <p className="text-xs text-[#5A5A40]/60">Digite a senha para acessar as configurações.</p>
-                </div>
-                <form onSubmit={verifyPassword} className="space-y-4">
-                  <input 
-                    type="password"
-                    autoFocus
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full bg-[#f5f5f0] border border-[#5A5A40]/10 rounded-xl py-3 px-4 text-center focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/20"
-                    placeholder="Senha"
-                  />
-                  <div className="flex gap-2">
-                    <button 
-                      type="button"
-                      onClick={() => setShowPasswordPrompt(false)}
-                      className="flex-1 py-3 text-xs font-bold text-[#5A5A40]/60 hover:bg-[#5A5A40]/5 rounded-xl transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button 
-                      type="submit"
-                      className="flex-1 py-3 bg-[#5A5A40] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#5A5A40]/20"
-                    >
-                      Entrar
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          )}
-
           {view === 'registration' && (
             <motion.div
               key="reg"
@@ -373,6 +338,20 @@ export default function App() {
                         onChange={e => setFormData({...formData, fullName: e.target.value})}
                         className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-black font-semibold"
                         placeholder="Seu nome completo"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <label className="text-xs font-black uppercase tracking-widest text-black mb-2 block">CPF</label>
+                    <div className="relative">
+                      <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input 
+                        type="text"
+                        value={formData.cpf}
+                        onChange={e => setFormData({...formData, cpf: e.target.value})}
+                        className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all text-black font-semibold"
+                        placeholder="000.000.000-00"
                       />
                     </div>
                   </div>
@@ -667,7 +646,7 @@ export default function App() {
                     <FileSpreadsheet size={20} />
                   </button>
                   <button 
-                    onClick={handleClearData}
+                    onClick={() => setShowClearConfirm(true)}
                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     title="Limpar todos os dados"
                   >
@@ -675,58 +654,6 @@ export default function App() {
                   </button>
                 </div>
               </div>
-
-              {/* QR Code Modal */}
-              <AnimatePresence>
-                {showQRCode && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.9, y: 20 }}
-                      animate={{ scale: 1, y: 0 }}
-                      exit={{ scale: 0.9, y: 20 }}
-                      className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl space-y-6 relative"
-                    >
-                      <button 
-                        onClick={() => setShowQRCode(false)}
-                        className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors"
-                      >
-                        <X size={20} />
-                      </button>
-
-                      <div className="text-center space-y-2">
-                        <h3 className="text-2xl font-black text-black">QR Code do Sorteio</h3>
-                        <p className="text-sm text-gray-500 font-medium">Aponte a câmera do celular para acessar o formulário de cadastro.</p>
-                      </div>
-
-                      <div className="bg-white p-6 rounded-3xl border-2 border-gray-100 flex items-center justify-center shadow-inner">
-                        <QRCodeSVG 
-                          value={PUBLIC_URL} 
-                          size={200}
-                          level="H"
-                          includeMargin={true}
-                        />
-                      </div>
-
-                      <div className="bg-gray-50 p-4 rounded-2xl text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Link Público</p>
-                        <p className="text-xs font-bold text-black break-all">{PUBLIC_URL}</p>
-                      </div>
-
-                      <button 
-                        onClick={() => window.print()}
-                        className="w-full py-4 bg-black text-white font-black rounded-2xl shadow-lg hover:bg-gray-900 transition-all flex items-center justify-center gap-2"
-                      >
-                        Imprimir QR Code <FileDown size={18} />
-                      </button>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               {/* Giveaway Section */}
               <div className="bg-black text-white rounded-[2.5rem] p-10 text-center space-y-8 shadow-2xl relative overflow-hidden">
@@ -785,6 +712,7 @@ export default function App() {
                       <div key={user.id} className="p-4 flex justify-between items-center hover:bg-[#f5f5f0]/50 transition-colors group">
                         <div className="flex-1">
                           <p className="font-bold text-sm">{user.fullName}</p>
+                          {user.cpf && <p className="text-[10px] text-gray-400 font-bold">CPF: {user.cpf}</p>}
                           <p className="text-xs text-gray-500 font-bold">{user.phone}</p>
                           <p className="text-xs text-gray-400 font-medium">{user.city} • {user.activityBranch}</p>
                         </div>
@@ -793,7 +721,7 @@ export default function App() {
                             {new Date(user.createdAt).toLocaleDateString()}
                           </div>
                           <button 
-                            onClick={() => handleDeleteUser(user.id)}
+                            onClick={() => setUserToDelete(user.id || null)}
                             className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                             title="Excluir participante"
                           >
@@ -813,6 +741,201 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {showPasswordPrompt && (
+          <motion.div
+            key="password-prompt"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white border border-[#5A5A40]/20 rounded-3xl p-8 w-full max-w-xs shadow-2xl space-y-6"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 bg-[#5A5A40]/10 text-[#5A5A40] rounded-full flex items-center justify-center mx-auto">
+                  <Settings size={24} />
+                </div>
+                <h3 className="font-bold text-lg">Acesso Restrito</h3>
+                <p className="text-xs text-[#5A5A40]/60">Digite a senha para acessar as configurações.</p>
+              </div>
+              <form onSubmit={verifyPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <input 
+                    type="password"
+                    autoFocus
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    className={`w-full bg-[#f5f5f0] border ${passwordError ? 'border-red-500' : 'border-[#5A5A40]/10'} rounded-xl py-3 px-4 text-center focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/20`}
+                    placeholder="Senha"
+                  />
+                  {passwordError && (
+                    <p className="text-[10px] text-red-500 font-bold text-center">Senha incorreta!</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordPrompt(false);
+                      setPasswordError(false);
+                    }}
+                    className="flex-1 py-3 text-xs font-bold text-[#5A5A40]/60 hover:bg-[#5A5A40]/5 rounded-xl transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 py-3 bg-[#5A5A40] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#5A5A40]/20"
+                  >
+                    Entrar
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showQRCode && (
+          <motion.div
+            key="qr-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl space-y-6 relative"
+            >
+              <button 
+                onClick={() => setShowQRCode(false)}
+                className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-black text-black">QR Code do Sorteio</h3>
+                <p className="text-sm text-gray-500 font-medium">Aponte a câmera do celular para acessar o formulário de cadastro.</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-3xl border-2 border-gray-100 flex items-center justify-center shadow-inner">
+                <QRCodeSVG 
+                  value={PUBLIC_URL} 
+                  size={200}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-2xl text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Link Público</p>
+                <p className="text-xs font-bold text-black break-all">{PUBLIC_URL}</p>
+              </div>
+
+              <button 
+                onClick={() => window.print()}
+                className="w-full py-4 bg-black text-white font-black rounded-2xl shadow-lg hover:bg-gray-900 transition-all flex items-center justify-center gap-2"
+              >
+                Imprimir QR Code <FileDown size={18} />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {userToDelete && (
+          <motion.div
+            key="delete-confirm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl p-8 w-full max-w-xs shadow-2xl space-y-6 text-center"
+            >
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
+                <AlertCircle size={32} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-black">Excluir Participante?</h3>
+                <p className="text-sm text-gray-500 font-medium">Esta ação não pode ser desfeita.</p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setUserToDelete(null)}
+                  className="flex-1 py-4 bg-gray-100 text-gray-600 font-black rounded-2xl hover:bg-gray-200 transition-all"
+                >
+                  Não
+                </button>
+                <button 
+                  onClick={handleDeleteUser}
+                  className="flex-1 py-4 bg-red-500 text-white font-black rounded-2xl shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
+                >
+                  Sim
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showClearConfirm && (
+          <motion.div
+            key="clear-confirm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl p-8 w-full max-w-xs shadow-2xl space-y-6 text-center"
+            >
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
+                <Trash2 size={32} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-black">Limpar Tudo?</h3>
+                <p className="text-sm text-gray-500 font-medium">Todos os cadastros serão apagados permanentemente.</p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowClearConfirm(false)}
+                  className="flex-1 py-4 bg-gray-100 text-gray-600 font-black rounded-2xl hover:bg-gray-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleClearData}
+                  className="flex-1 py-4 bg-red-500 text-white font-black rounded-2xl shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
+                >
+                  Limpar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer Branding */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-white/20 p-4 text-center shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">

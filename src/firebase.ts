@@ -8,6 +8,7 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export interface User {
   id?: string;
   fullName: string;
+  cpf?: string;
   phone: string;
   city: string;
   activityBranch: string;
